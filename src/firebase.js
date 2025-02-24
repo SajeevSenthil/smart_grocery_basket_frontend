@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBEVutHD46Si_G9HNgzVPKAvaxmV0U-cME",
-  authDomain: "smartgrocery-9f884.firebaseapp.com",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   databaseURL: "https://smartgrocery-9f884-default-rtdb.firebaseio.com",
-  projectId: "smartgrocery-9f884",
-  storageBucket: "smartgrocery-9f884.appspot.com",
-  messagingSenderId: "983846952457",
-  appId: "1:983846952457:web:2a7d254aafe06c34dd62d8"
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
