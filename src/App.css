@@ -1,42 +1,52 @@
-/* #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+/* Add these styles to App.css */
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+body {
+  background-color: #f8f9fa;
 }
 
 .card {
-  padding: 2em;
+  border: none;
+  border-radius: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.read-the-docs {
-  color: #888;
-} */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0a58ca;
+  border-color: #0a58ca;
+}
+
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Animation for adding products */
+@keyframes highlight {
+  0% { background-color: rgba(13, 110, 253, 0.1); }
+  100% { background-color: transparent; }
+}
+
+.highlight-new {
+  animation: highlight 2s ease-out;
+}

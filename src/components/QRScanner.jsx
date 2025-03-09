@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 
 const QRScanner = ({ onScan }) => {
   const videoRef = useRef(null);
@@ -8,6 +7,8 @@ const QRScanner = ({ onScan }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [status, setStatus] = useState("");
   const barcodeDetectorRef = useRef(null);
+  const scanningRef = useRef(false);
+  const scannedProductsRef = useRef(new Set()); // Fix: Use ref instead of state
 
   useEffect(() => {
     if ("BarcodeDetector" in window) {
@@ -15,14 +16,15 @@ const QRScanner = ({ onScan }) => {
         formats: [
           "code_128", "code_39", "code_93", "codabar",
           "ean_13", "ean_8", "itf", "pdf417",
-          "upc_a", "upc_e"
-        ] 
+          "upc_a", "upc_e", "qr_code"
+        ]
       });
+      setStatus("Ready to scan. Click 'Start Scanning'");
     } else {
       setStatus("Barcode Detector API is not supported in this browser.");
     }
 
-    return () => stopScanner(); // Cleanup on unmount
+    return () => stopScanner();
   }, []);
 
   const startScanner = async () => {
@@ -34,6 +36,8 @@ const QRScanner = ({ onScan }) => {
       videoRef.current.srcObject = stream;
       videoRef.current.play();
       setIsScanning(true);
+      scanningRef.current = true;
+      setStatus("Scanning... Hold barcode in view");
       detectBarcode();
     } catch (error) {
       console.error("Camera Error:", error);
@@ -42,28 +46,35 @@ const QRScanner = ({ onScan }) => {
   };
 
   const detectBarcode = async () => {
-    if (!barcodeDetectorRef.current || !videoRef.current) return;
+    if (!barcodeDetectorRef.current || !videoRef.current || !videoRef.current.srcObject) return;
 
     const track = videoRef.current.srcObject.getVideoTracks()[0];
     const imageCapture = new ImageCapture(track);
 
     const scan = async () => {
-      if (!isScanning) return;
+      if (!scanningRef.current) return;
 
       try {
         const bitmap = await imageCapture.grabFrame();
         const barcodes = await barcodeDetectorRef.current.detect(bitmap);
 
         if (barcodes.length > 0) {
-          setScannedData(barcodes[0].rawValue);
-          processProductScan(barcodes[0].rawValue);
-          setIsScanning(false);
+          const productId = barcodes[0].rawValue;
+
+          if (!scannedProductsRef.current.has(productId)) {
+            scannedProductsRef.current.add(productId);
+            setScannedData(productId);
+            setStatus(`Detected: ${productId}`);
+            await processProductScan(productId);
+          }
         }
       } catch (error) {
         console.error("Barcode detection error:", error);
       }
 
-      requestAnimationFrame(scan);
+      if (scanningRef.current) {
+        requestAnimationFrame(scan);
+      }
     };
 
     scan();
@@ -71,11 +82,11 @@ const QRScanner = ({ onScan }) => {
 
   const processProductScan = async (productId) => {
     try {
-      const productRef = doc(db, "store-products", productId);
-      const docSnap = await getDoc(productRef);
+      const response = await fetch("http://localhost:5001/api/products");
+      const products = await response.json();
+      const product = products.find((p) => p.productId === productId);
 
-      if (docSnap.exists()) {
-        const product = docSnap.data();
+      if (product) {
         onScan(product);
         setStatus(`Product: ${product.name}`);
       } else {
@@ -86,27 +97,97 @@ const QRScanner = ({ onScan }) => {
       setStatus(`Error fetching product: ${productId}`);
     }
 
-    setTimeout(() => setIsScanning(true), 2000);
+    setTimeout(() => {
+      console.log("Removing", productId);
+      scannedProductsRef.current.delete(productId);
+    }, 5000);
   };
 
   const stopScanner = () => {
+    scanningRef.current = false;
+    setIsScanning(false);
+
     if (videoRef.current?.srcObject) {
       videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+    }
+
+    setStatus("Scanner stopped");
+  };
+
+  const toggleScanner = () => {
+    if (isScanning) {
+      stopScanner();
+    } else {
+      startScanner();
     }
   };
 
   return (
-    <div className="card">
-      <div className="card-body text-center">
-        <video ref={videoRef} className="img-fluid rounded mb-3" autoPlay playsInline />
-        <h3 className="text-success">{scannedData}</h3>
-        <div className="text-danger">{status}</div>
-        <button onClick={startScanner} className="btn btn-primary">
-          Start Scanning
+    <div className="card shadow-sm h-100">
+      <div className="card-header bg-white py-3">
+        <h3 className="h4 text-primary mb-0">
+          <i className="fas fa-camera me-2"></i>
+          Barcode Scanner
+        </h3>
+      </div>
+
+      <div className="card-body d-flex flex-column align-items-center">
+        <div className="position-relative mb-3 w-100">
+          <div className={`position-relative ${isScanning ? '' : 'bg-light rounded border'}`} style={{ minHeight: "200px" }}>
+            <video 
+              ref={videoRef} 
+              className={`w-100 rounded ${isScanning ? 'border' : 'd-none'}`}
+              style={{ maxHeight: "300px", objectFit: "cover" }} 
+              autoPlay 
+              playsInline 
+              muted 
+            />
+
+            {!isScanning && (
+              <div className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center">
+                <div className="text-center text-muted">
+                  <i className="fas fa-camera fa-3x mb-3"></i>
+                  <p>Camera inactive</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className={`alert ${scannedData ? 'alert-success' : 'alert-secondary'} w-100 mb-3`}>
+          <div className="d-flex align-items-center">
+            <div className="me-3">
+              {scannedData ? (
+                <i className="fas fa-check-circle fa-2x"></i>
+              ) : (
+                <i className="fas fa-info-circle fa-2x"></i>
+              )}
+            </div>
+            <div>
+              <p className="mb-0">{status}</p>
+              {scannedData && <p className="mb-0 text-success">Last scanned: {scannedData}</p>}
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={toggleScanner} 
+          className={`btn ${isScanning ? 'btn-danger' : 'btn-primary'} w-100`}
+        >
+          {isScanning ? (
+            <><i className="fas fa-stop me-2"></i>Stop Scanning</>
+          ) : (
+            <><i className="fas fa-play me-2"></i>Start Scanning</>
+          )}
         </button>
       </div>
     </div>
   );
+};
+
+QRScanner.propTypes = {
+  onScan: PropTypes.func
 };
 
 export default QRScanner;
