@@ -100,7 +100,7 @@ const QRScanner = ({ onScan }) => {
     setTimeout(() => {
       console.log("Removing", productId);
       scannedProductsRef.current.delete(productId);
-    }, 5000);
+    }, 3000);
   };
 
   const stopScanner = () => {
