@@ -126,8 +126,8 @@ const QRScanner = ({ onScan }) => {
   return (
     <div className="card shadow-sm h-100">
       <div className="card-header bg-white py-3">
-        <h3 className="h4 text-primary mb-0">
-          <i className="fas fa-camera me-2"></i>
+        <h3 className="h4 text-dark mb-0">
+          <i className="fas fa-camera me-2" style={{ color: '#00a76f' }}></i>
           Barcode Scanner
         </h3>
       </div>
@@ -170,10 +170,9 @@ const QRScanner = ({ onScan }) => {
             </div>
           </div>
         </div>
-
         <button 
           onClick={toggleScanner} 
-          className={`btn ${isScanning ? 'btn-danger' : 'btn-primary'} w-100`}
+          className={`btn w-100 ${isScanning ? 'btn-stop-scan' : 'btn-start-scan'}`}
         >
           {isScanning ? (
             <><i className="fas fa-stop me-2"></i>Stop Scanning</>
